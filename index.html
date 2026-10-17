@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Самосвал: доставка груза</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #2d5a27;
+            outline: none;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 15, 30, 0.95);
+            z-index: 100;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #a8dadc;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+
+        .controls h3 {
+            margin-bottom: 1rem;
+            color: #ffd700;
+            text-align: center;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+            gap: 1rem;
+        }
+
+        .key {
+            background: #4a4a6a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+            margin: 0.3rem;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(78, 205, 196, 0.6);
+            background: linear-gradient(135deg, #5de0d6, #50b09d);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #ff6b6b, #ee5253);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        button.secondary:hover {
+            background: linear-gradient(135deg, #ff7b7b, #f06263);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a8dadc;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .result-message {
+            font-size: 1.3rem;
+            margin: 1.5rem 0;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .pause-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        .pause-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .hud {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 1rem;
+            border-radius: 10px;
+            z-index: 50;
+            min-width: 280px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.3rem 0;
+            font-size: 1rem;
+            gap: 1rem;
+        }
+
+        .hud-label {
+            color: #a8dadc;
+        }
+
+        .hud-value {
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .hud-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0.5rem 0;
+        }
+
+        .level-info {
+            background: rgba(78, 205, 196, 0.2);
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border: 1px solid #4ecdc4;
+        }
+
+        .level-title {
+            font-size: 0.9rem;
+            color: #4ecdc4;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .task-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            z-index: 50;
+            max-width: 80%;
+            text-align: center;
+            border: 2px solid #4ecdc4;
+            color: #fff;
+        }
+
+        .damage-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 0.3rem;
+            overflow: hidden;
+        }
+
+        .damage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .bonus-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(78, 205, 196, 0.95);
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            z-index: 60;
+            box-shadow: 0 5px 20px rgba(78, 205, 196, 0.6);
+            animation: popupFade 2s ease-out forwards;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        .level-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 215, 0, 0.95);
+            padding: 1.5rem 3rem;
+            border-radius: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1a1a2e;
+            z-index: 60;
+            box-shadow: 0 5px 30px rgba(255, 215, 0, 0.8);
+            animation: levelPopupFade 2.5s ease-out forwards;
+            pointer-events: none;
+            text-align: center;
+        }
+
+        @keyframes popupFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -70%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -100%) scale(0.8);
+            }
+        }
+
+        @keyframes levelPopupFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.3) rotate(-10deg);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.2) rotate(5deg);
+            }
+            40% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -70%) scale(0.8);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .subtitle { font-size: 1rem; }
+            .controls { padding: 1rem; }
+            button { padding: 0.8rem 1.8rem; font-size: 1.1rem; }
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" tabindex="0"></canvas>
+        
+        <!-- Главное меню -->
+        <div id="menuScreen" class="screen">
+            <h1>🚛 Самосвал: доставка груза</h1>
+            <p class="subtitle">Выполняйте заказы по доставке груза! Каждый новый заказ требует больше груза.<br>За каждую полную разгрузку вы получаете +5 секунд бонусного времени!</p>
+            
+            <div class="controls">
+                <h3>Управление</h3>
+                <div class="control-row"><span>Вперёд:</span><span class="key">W / ↑</span></div>
+                <div class="control-row"><span>Назад:</span><span class="key">S / ↓</span></div>
+                <div class="control-row"><span>Влево:</span><span class="key">A / ←</span></div>
+                <div class="control-row"><span>Вправо:</span><span class="key">D / →</span></div>
+                <div class="control-row"><span>Разгрузка:</span><span class="key">E (удерж.)</span></div>
+                <div class="control-row"><span>Тормоз:</span><span class="key">Пробел</span></div>
+                <div class="control-row"><span>Пауза:</span><span class="key">Esc</span></div>
+            </div>
+            
+            <button id="startBtn">Начать игру</button>
+        </div>
+        
+        <!-- Экран паузы -->
+        <div id="pauseScreen" class="screen hidden">
+            <h2>⏸️ Пауза</h2>
+            <button id="resumeBtn">Продолжить</button>
+            <button id="pauseMenuBtn" class="secondary">В главное меню</button>
+        </div>
+        
+        <!-- Экран победы -->
+        <div id="winScreen" class="screen hidden">
+            <h2 style="color: #4ecdc4;">✅ Миссия выполнена!</h2>
+            <p class="result-message">Все заказы выполнены. Отличная работа!</p>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Доставлено груза</div>
+                    <div class="stat-value" id="winDelivered">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Уровней пройдено</div>
+                    <div class="stat-value" id="winLevel">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Оставшееся время</div>
+                    <div class="stat-value" id="winTimeLeft">00:00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Прочность</div>
+                    <div class="stat-value" id="winHealth">0%</div>
+                </div>
+            </div>
+            <div>
+                <button id="playAgainBtn">Играть снова</button>
+                <button id="winMenuBtn" class="secondary">В главное меню</button>
+            </div>
+        </div>
+        
+        <!-- Экран поражения -->
+        <div id="loseScreen" class="screen hidden">
+            <h2 style="color: #ff6b6b;">❌ Миссия провалена</h2>
+            <p class="result-message" id="loseReason">Причина поражения</p>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Доставлено груза</div>
+                    <div class="stat-value" id="loseDelivered">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Уровней пройдено</div>
+                    <div class="stat-value" id="loseLevel">0</div>
+                </div>
+            </div>
+            <div>
+                <button id="retryBtn">Попробовать снова</button>
+                <button id="loseMenuBtn" class="secondary">В главное меню</button>
+            </div>
+        </div>
+        
+        <!-- HUD во время игры -->
+        <div id="hud" class="hud hidden">
+            <div class="level-info">
+                <div class="level-title" id="levelTitle">УРОВЕНЬ 1</div>
+                <div class="hud-row">
+                    <span class="hud-label">📋 Заказ:</span>
+                    <span class="hud-value" id="orderDisplay">0 / 50</span>
+                </div>
+            </div>
+            <div class="hud-divider"></div>
+            <div class="hud-row">
+                <span class="hud-label">⏱ Время:</span>
+                <span class="hud-value" id="timeDisplay">03:00</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-label">📦 Груз в кузове:</span>
+                <span class="hud-value" id="cargoDisplay">0 / 100</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-label">✅ Всего доставлено:</span>
+                <span class="hud-value" id="deliveredDisplay">0</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-label">🚗 Скорость:</span>
+                <span class="hud-value" id="speedDisplay">0 км/ч</span>
+            </div>
+            <div class="hud-row">
+                <span class="hud-label">🛡 Прочность:</span>
+                <span class="hud-value" id="healthDisplay">100%</span>
+            </div>
+            <div class="damage-bar">
+                <div class="damage-fill" id="healthBar" style="width: 100%"></div>
+            </div>
+        </div>
+        
+        <!-- Кнопка паузы -->
+        <div id="pauseButton" class="pause-btn hidden">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <rect x="6" y="4" width="4" height="16" rx="1"/>
+                <rect x="14" y="4" width="4" height="16" rx="1"/>
+            </svg>
+        </div>
+        
+        <!-- Подсказка задачи -->
+        <div id="taskHint" class="task-hint hidden">Заедьте в зону погрузки</div>
+    </div>
+
+    <script>
+        // ============================================
+        // ИГРОВЫЕ КОНСТАНТЫ И СОСТОЯНИЯ
+        // ============================================
+        const GAME_STATES = {
+            MENU: 'menu',
+            PLAYING: 'playing',
+            PAUSED: 'paused',
+            WIN: 'win',
+            LOSE: 'lose'
+        };
+
+        const CONFIG = {
+            MAP_WIDTH: 2400,
+            MAP_HEIGHT: 1600,
+            TRUCK_CAPACITY: 100,
+            LOAD_RATE: 4,
+            UNLOAD_RATE: 10,
+            MAX_SPEED_FORWARD: 4.5,
+            MAX_SPEED_BACKWARD: 2.2,
+            ACCELERATION: 0.15,
+            FRICTION: 0.03,
+            BRAKE_FORCE: 0.25,
+            TURN_SPEED: 0.045,
+            MISSION_TIME: 180,
+            COLLISION_DAMAGE: 15,
+            COLLISION_CARGO_LOSS: 5,
+            TRUCK_WIDTH: 70,
+            TRUCK_HEIGHT: 38,
+            TIME_BONUS_PER_FULL_UNLOAD: 5,
+            MAX_LEVEL: 10 // Максимальное количество уровней
+        };
+
+        // Цели для каждого уровня
+        const LEVEL_TARGETS = [
+            50,   // Уровень 1
+            80,   // Уровень 2
+            120,  // Уровень 3
+            160,  // Уровень 4
+            200,  // Уровень 5
+            250,  // Уровень 6
+            300,  // Уровень 7
+            360,  // Уровень 8
+            420,  // Уровень 9
+            500   // Уровень 10
+        ];
+
+        // ============================================
+        // DOM ЭЛЕМЕНТЫ
+        // ============================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menuScreen = document.getElementById('menuScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
+        const winScreen = document.getElementById('winScreen');
+        const loseScreen = document.getElementById('loseScreen');
+        const hud = document.getElementById('hud');
+        const pauseButton = document.getElementById('pauseButton');
+        const taskHint = document.getElementById('taskHint');
+        
+        const timeDisplay = document.getElementById('timeDisplay');
+        const cargoDisplay = document.getElementById('cargoDisplay');
+        const deliveredDisplay = document.getElementById('deliveredDisplay');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const healthDisplay = document.getElementById('healthDisplay');
+        const healthBar = document.getElementById('healthBar');
+        const levelTitle = document.getElementById('levelTitle');
+        const orderDisplay = document.getElementById('orderDisplay');
+
+        // ============================================
+        // ИГРОВОЕ СОСТОЯНИЕ
+        // ============================================
+        let gameState = GAME_STATES.MENU;
+        let lastTime = 0;
+        let animationId = null;
+        
+        let truck = {};
+        let camera = { x: 0, y: 0 };
+        let obstacles = [];
+        let loadingZone = {};
+        let unloadingZone = {};
+        let keys = {};
+        
+        let collisionMessage = { text: '', timer: 0 };
+        
+        let missionStats = {
+            timeRemaining: CONFIG.MISSION_TIME,
+            totalDelivered: 0,
+            currentLevelDelivered: 0,
+            currentLevel: 1,
+            currentLevelTarget: LEVEL_TARGETS[0],
+            loseReason: ''
+        };
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ РАЗМЕРОВ КАНВАСА
+        // ============================================
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ============================================
+        // ОБРАБОТКА КЛАВИАТУРЫ
+        // ============================================
+        const GAME_KEYS = new Set([
+            'KeyW', 'KeyA', 'KeyS', 'KeyD',
+            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+            'Space', 'KeyE', 'Escape'
+        ]);
+
+        document.addEventListener('keydown', (e) => {
+            if (GAME_KEYS.has(e.code)) {
+                e.preventDefault();
+            }
+            
+            keys[e.code] = true;
+            
+            if (e.code === 'Escape') {
+                if (gameState === GAME_STATES.PLAYING) {
+                    setGameState(GAME_STATES.PAUSED);
+                } else if (gameState === GAME_STATES.PAUSED) {
+                    setGameState(GAME_STATES.PLAYING);
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        window.addEventListener('blur', () => {
+            keys = {};
+            if (gameState === GAME_STATES.PLAYING) {
+                setGameState(GAME_STATES.PAUSED);
+            }
+        });
+
+        // ============================================
+        // КНОПКИ МЕНЮ
+        // ============================================
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('resumeBtn').addEventListener('click', () => setGameState(GAME_STATES.PLAYING));
+        document.getElementById('pauseMenuBtn').addEventListener('click', goToMenu);
+        document.getElementById('playAgainBtn').addEventListener('click', startGame);
+        document.getElementById('winMenuBtn').addEventListener('click', goToMenu);
+        document.getElementById('retryBtn').addEventListener('click', startGame);
+        document.getElementById('loseMenuBtn').addEventListener('click', goToMenu);
+        pauseButton.addEventListener('click', () => {
+            if (gameState === GAME_STATES.PLAYING) {
+                setGameState(GAME_STATES.PAUSED);
+            } else if (gameState === GAME_STATES.PAUSED) {
+                setGameState(GAME_STATES.PLAYING);
+            }
+        });
+
+        // ============================================
+        // УПРАВЛЕНИЕ СОСТОЯНИЯМИ ИГРЫ
+        // ============================================
+        function setGameState(newState) {
+            menuScreen.classList.add('hidden');
+            pauseScreen.classList.add('hidden');
+            winScreen.classList.add('hidden');
+            loseScreen.classList.add('hidden');
+            hud.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            taskHint.classList.add('hidden');
+            
+            gameState = newState;
+            
+            switch (newState) {
+                case GAME_STATES.MENU:
+                    menuScreen.classList.remove('hidden');
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                    break;
+                case GAME_STATES.PLAYING:
+                    hud.classList.remove('hidden');
+                    pauseButton.classList.remove('hidden');
+                    taskHint.classList.remove('hidden');
+                    canvas.focus();
+                    if (!animationId) {
+                        lastTime = performance.now();
+                        animationId = requestAnimationFrame(gameLoop);
+                    }
+                    break;
+                case GAME_STATES.PAUSED:
+                    pauseScreen.classList.remove('hidden');
+                    break;
+                case GAME_STATES.WIN:
+                    showWinScreen();
+                    break;
+                case GAME_STATES.LOSE:
+                    showLoseScreen();
+                    break;
+            }
+        }
+
+        function goToMenu() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            keys = {};
+            setGameState(GAME_STATES.MENU);
+        }
+
+        // ============================================
+        // ЗАПУСК НОВОЙ ИГРЫ
+        // ============================================
+        function startGame() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            initTruck();
+            initZones();
+            initObstacles();
+            
+            missionStats = {
+                timeRemaining: CONFIG.MISSION_TIME,
+                totalDelivered: 0,
+                currentLevelDelivered: 0,
+                currentLevel: 1,
+                currentLevelTarget: LEVEL_TARGETS[0],
+                loseReason: ''
+            };
+            
+            collisionMessage = { text: '', timer: 0 };
+            keys = {};
+            
+            setGameState(GAME_STATES.PLAYING);
+        }
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ ИГРОВЫХ ОБЪЕКТОВ
+        // ============================================
+        function initTruck() {
+            truck = {
+                x: 350,
+                y: 800,
+                angle: 0,
+                speed: 0,
+                cargo: 0,
+                health: 100,
+                isLoading: false,
+                isUnloading: false,
+                wheelRotation: 0,
+                collisionCooldown: 0
+            };
+        }
+
+        function initZones() {
+            loadingZone = {
+                x: 100,
+                y: 150,
+                width: 280,
+                height: 220,
+                color: '#ff9500',
+                label: 'ЗОНА ПОГРУЗКИ'
+            };
+            
+            unloadingZone = {
+                x: CONFIG.MAP_WIDTH - 380,
+                y: CONFIG.MAP_HEIGHT - 370,
+                width: 280,
+                height: 220,
+                color: '#00b4d8',
+                label: 'ЗОНА РАЗГРУЗКИ'
+            };
+        }
+
+        function initObstacles() {
+            obstacles = [
+                { type: 'rock', x: 900, y: 500, radius: 45 },
+                { type: 'rock', x: 1300, y: 750, radius: 40 },
+                { type: 'rock', x: 700, y: 1100, radius: 50 },
+                { type: 'rock', x: 1600, y: 1200, radius: 42 },
+                { type: 'rock', x: 1800, y: 600, radius: 38 },
+                
+                { type: 'cone', x: 1000, y: 400, radius: 18 },
+                { type: 'cone', x: 1150, y: 650, radius: 18 },
+                { type: 'cone', x: 850, y: 900, radius: 18 },
+                { type: 'cone', x: 1450, y: 1000, radius: 18 },
+                { type: 'cone', x: 1700, y: 800, radius: 18 },
+                
+                { type: 'barrier', x: 600, y: 700, width: 120, height: 20 },
+                { type: 'barrier', x: 1500, y: 450, width: 20, height: 120 },
+                { type: 'barrier', x: 1100, y: 1300, width: 140, height: 20 }
+            ];
+        }
+
+        // ============================================
+        // ОБНОВЛЕНИЕ САМОСВАЛА
+        // ============================================
+        function updateTruck(dt) {
+            const step = dt * 60;
+            
+            if (truck.collisionCooldown > 0) {
+                truck.collisionCooldown -= dt;
+            }
+            
+            const forwardPressed = keys['KeyW'] || keys['ArrowUp'];
+            const backwardPressed = keys['KeyS'] || keys['ArrowDown'];
+            const leftPressed = keys['KeyA'] || keys['ArrowLeft'];
+            const rightPressed = keys['KeyD'] || keys['ArrowRight'];
+            const brakePressed = keys['Space'];
+            
+            if (forwardPressed) {
+                truck.speed += CONFIG.ACCELERATION * step;
+            } else if (backwardPressed) {
+                truck.speed -= CONFIG.ACCELERATION * 0.7 * step;
+            }
+            
+            if (brakePressed) {
+                if (truck.speed > 0) {
+                    truck.speed -= CONFIG.BRAKE_FORCE * step;
+                    if (truck.speed < 0) truck.speed = 0;
+                } else if (truck.speed < 0) {
+                    truck.speed += CONFIG.BRAKE_FORCE * step;
+                    if (truck.speed > 0) truck.speed = 0;
+                }
+            }
+            
+            if (!forwardPressed && !backwardPressed && !brakePressed) {
+                if (truck.speed > 0) {
+                    truck.speed -= CONFIG.FRICTION * step;
+                    if (truck.speed < 0) truck.speed = 0;
+                } else if (truck.speed < 0) {
+                    truck.speed += CONFIG.FRICTION * step;
+                    if (truck.speed > 0) truck.speed = 0;
+                }
+            }
+            
+            truck.speed = Math.max(-CONFIG.MAX_SPEED_BACKWARD, Math.min(CONFIG.MAX_SPEED_FORWARD, truck.speed));
+            
+            const absSpeed = Math.abs(truck.speed);
+            if (absSpeed > 0.05) {
+                const turnEfficiency = Math.min(1, absSpeed / 2);
+                const direction = truck.speed >= 0 ? 1 : -1;
+                
+                if (leftPressed) {
+                    truck.angle -= CONFIG.TURN_SPEED * step * turnEfficiency * direction;
+                }
+                if (rightPressed) {
+                    truck.angle += CONFIG.TURN_SPEED * step * turnEfficiency * direction;
+                }
+            }
+            
+            truck.x += Math.cos(truck.angle) * truck.speed * step;
+            truck.y += Math.sin(truck.angle) * truck.speed * step;
+            
+            truck.wheelRotation += truck.speed * step * 0.15;
+            
+            const halfW = CONFIG.TRUCK_WIDTH / 2;
+            const halfH = CONFIG.TRUCK_HEIGHT / 2;
+            let hitBorder = false;
+            
+            if (truck.x < halfW) {
+                truck.x = halfW;
+                hitBorder = true;
+            }
+            if (truck.x > CONFIG.MAP_WIDTH - halfW) {
+                truck.x = CONFIG.MAP_WIDTH - halfW;
+                hitBorder = true;
+            }
+            if (truck.y < halfH) {
+                truck.y = halfH;
+                hitBorder = true;
+            }
+            if (truck.y > CONFIG.MAP_HEIGHT - halfH) {
+                truck.y = CONFIG.MAP_HEIGHT - halfH;
+                hitBorder = true;
+            }
+            
+            if (hitBorder) {
+                applyCollision(0.4);
+            }
+            
+            checkObstacleCollisions();
+            checkLoading(dt);
+            checkUnloading(dt);
+        }
+
+        // ============================================
+        // ОБРАБОТКА СТОЛКНОВЕНИЯ
+        // ============================================
+        function applyCollision(intensity) {
+            if (truck.collisionCooldown > 0) return;
+            
+            const absSpeed = Math.abs(truck.speed);
+            if (absSpeed < 0.5) {
+                truck.speed = 0;
+                return;
+            }
+            
+            const damage = CONFIG.COLLISION_DAMAGE * intensity;
+            const cargoLoss = Math.floor(Math.random() * (CONFIG.COLLISION_CARGO_LOSS + 1) * intensity);
+            
+            truck.health = Math.max(0, truck.health - damage);
+            truck.cargo = Math.max(0, truck.cargo - cargoLoss);
+            truck.speed *= -0.3;
+            
+            truck.collisionCooldown = 0.5;
+            
+            collisionMessage = {
+                text: 'Столкновение! Проверьте повреждения',
+                timer: 2
+            };
+            
+            // Проверка поражения по прочности
+            if (truck.health <= 0) {
+                missionStats.loseReason = 'Самосвал слишком сильно повреждён';
+                setGameState(GAME_STATES.LOSE);
+            }
+        }
+
+        // ============================================
+        // ПРОВЕРКА СТОЛКНОВЕНИЙ С ПРЕПЯТСТВИЯМИ
+        // ============================================
+        function checkObstacleCollisions() {
+            const truckRadius = Math.min(CONFIG.TRUCK_WIDTH, CONFIG.TRUCK_HEIGHT) / 2;
+            
+            for (let obs of obstacles) {
+                if (obs.type === 'rock' || obs.type === 'cone') {
+                    const dx = truck.x - obs.x;
+                    const dy = truck.y - obs.y;
+                    const dist = Math.hypot(dx, dy);
+                    const minDist = truckRadius + obs.radius;
+                    
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        truck.x += nx * overlap;
+                        truck.y += ny * overlap;
+                        
+                        applyCollision(Math.min(1, Math.abs(truck.speed) / 3));
+                    }
+                } else if (obs.type === 'barrier') {
+                    const closestX = Math.max(obs.x, Math.min(truck.x, obs.x + obs.width));
+                    const closestY = Math.max(obs.y, Math.min(truck.y, obs.y + obs.height));
+                    const dx = truck.x - closestX;
+                    const dy = truck.y - closestY;
+                    const dist = Math.hypot(dx, dy);
+                    
+                    if (dist < truckRadius && dist > 0) {
+                        const overlap = truckRadius - dist;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        truck.x += nx * overlap;
+                        truck.y += ny * overlap;
+                        
+                        applyCollision(Math.min(1, Math.abs(truck.speed) / 3));
+                    }
+                }
+            }
+        }
+
+        // ============================================
+        // ПРОВЕРКА ПОГРУЗКИ
+        // ============================================
+        function checkLoading(dt) {
+            const inZone = 
+                truck.x > loadingZone.x && 
+                truck.x < loadingZone.x + loadingZone.width &&
+                truck.y > loadingZone.y && 
+                truck.y < loadingZone.y + loadingZone.height;
+            
+            const almostStopped = Math.abs(truck.speed) < 0.3;
+            const hasSpace = truck.cargo < CONFIG.TRUCK_CAPACITY;
+            
+            truck.isLoading = inZone && almostStopped && hasSpace;
+            
+            if (truck.isLoading) {
+                truck.cargo = Math.min(CONFIG.TRUCK_CAPACITY, truck.cargo + CONFIG.LOAD_RATE * dt);
+            }
+        }
+
+        // ============================================
+        // ПРОВЕРКА РАЗГРУЗКИ С СИСТЕМОЙ УРОВНЕЙ
+        // ============================================
+        function checkUnloading(dt) {
+            const inZone = 
+                truck.x > unloadingZone.x && 
+                truck.x < unloadingZone.x + unloadingZone.width &&
+                truck.y > unloadingZone.y && 
+                truck.y < unloadingZone.y + unloadingZone.height;
+            
+            const almostStopped = Math.abs(truck.speed) < 0.3;
+            const pressingE = keys['KeyE'];
+            const hasCargo = truck.cargo > 0;
+            
+            truck.isUnloading = inZone && almostStopped && pressingE && hasCargo;
+            
+            if (truck.isUnloading) {
+                const unloadAmount = Math.min(truck.cargo, CONFIG.UNLOAD_RATE * dt);
+                truck.cargo -= unloadAmount;
+                missionStats.totalDelivered += unloadAmount;
+                missionStats.currentLevelDelivered += unloadAmount;
+                
+                // Проверяем, если кузов полностью разгрузился - бонусное время
+                if (truck.cargo <= 0.1) {
+                    missionStats.timeRemaining += CONFIG.TIME_BONUS_PER_FULL_UNLOAD;
+                    showBonusPopup(`+${CONFIG.TIME_BONUS_PER_FULL_UNLOAD} сек!`);
+                    truck.cargo = 0;
+                }
+                
+                // Проверяем выполнение текущего уровня
+                checkLevelCompletion();
+            }
+        }
+
+        // ============================================
+        // ПРОВЕРКА ВЫПОЛНЕНИЯ УРОВНЯ
+        // ============================================
+        function checkLevelCompletion() {
+            if (missionStats.currentLevelDelivered >= missionStats.currentLevelTarget) {
+                // Уровень выполнен!
+                if (missionStats.currentLevel >= CONFIG.MAX_LEVEL) {
+                    // Все уровни пройдены - победа!
+                    setGameState(GAME_STATES.WIN);
+                } else {
+                    // Переход на следующий уровень
+                    missionStats.currentLevel++;
+                    missionStats.currentLevelDelivered = 0;
+                    missionStats.currentLevelTarget = LEVEL_TARGETS[missionStats.currentLevel - 1];
+                    
+                    // Показываем уведомление о новом уровне
+                    showLevelPopup(`УРОВЕНЬ ${missionStats.currentLevel}!`);
+                }
+            }
+        }
+
+        // ============================================
+        // ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ
+        // ============================================
+        function showBonusPopup(text) {
+            const popup = document.createElement('div');
+            popup.className = 'bonus-popup';
+            popup.textContent = `⏱ ${text}`;
+            document.getElementById('gameContainer').appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 2000);
+        }
+
+        function showLevelPopup(text) {
+            const popup = document.createElement('div');
+            popup.className = 'level-popup';
+            popup.textContent = `🎉 ${text}`;
+            document.getElementById('gameContainer').appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 2500);
+        }
+
+        // ============================================
+        // ОБНОВЛЕНИЕ ТАЙМЕРА
+        // ============================================
+        function updateTimer(dt) {
+            missionStats.timeRemaining -= dt;
+            
+            if (missionStats.timeRemaining <= 0) {
+                missionStats.timeRemaining = 0;
+                missionStats.loseReason = 'Время вышло';
+                setGameState(GAME_STATES.LOSE);
+            }
+        }
+
+        // ============================================
+        // ОБНОВЛЕНИЕ КАМЕРЫ
+        // ============================================
+        function updateCamera() {
+            const targetX = truck.x - canvas.width / 2;
+            const targetY = truck.y - canvas.height / 2;
+            
+            camera.x += (targetX - camera.x) * 0.1;
+            camera.y += (targetY - camera.y) * 0.1;
+            
+            camera.x = Math.max(0, Math.min(CONFIG.MAP_WIDTH - canvas.width, camera.x));
+            camera.y = Math.max(0, Math.min(CONFIG.MAP_HEIGHT - canvas.height, camera.y));
+            
+            if (CONFIG.MAP_WIDTH < canvas.width) camera.x = (CONFIG.MAP_WIDTH - canvas.width) / 2;
+            if (CONFIG.MAP_HEIGHT < canvas.height) camera.y = (CONFIG.MAP_HEIGHT - canvas.height) / 2;
+        }
+
+        // ============================================
+        // ОСНОВНОЙ ИГРОВОЙ ЦИКЛ
+        // ============================================
+        function gameLoop(currentTime) {
+            if (gameState !== GAME_STATES.PLAYING) {
+                animationId = null;
+                return;
+            }
+            
+            const dt = Math.min((currentTime - lastTime) / 1000, 0.05);
+            lastTime = currentTime;
+            
+            updateTimer(dt);
+            updateTruck(dt);
+            updateCamera();
+            
+            if (collisionMessage.timer > 0) {
+                collisionMessage.timer -= dt;
+            }
+            
+            render();
+            updateHUD();
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // ============================================
+        // ОТРИСОВКА
+        // ============================================
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+            
+            drawBackground();
+            drawRoad();
+            drawZone(loadingZone);
+            drawZone(unloadingZone);
+            drawObstacles();
+            drawTruck();
+            
+            ctx.restore();
+            
+            if (collisionMessage.timer > 0) {
+                drawCollisionMessage();
+            }
+        }
+
+        // ============================================
+        // ОТРИСОВКА ФОНА (ТРАВА)
+        // ============================================
+        function drawBackground() {
+            ctx.fillStyle = '#3a7d32';
+            ctx.fillRect(0, 0, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+            
+            ctx.fillStyle = '#2d5a27';
+            for (let i = 0; i < 200; i++) {
+                const x = (i * 137) % CONFIG.MAP_WIDTH;
+                const y = (i * 251) % CONFIG.MAP_HEIGHT;
+                const r = 3 + (i % 5);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = '#4a9d42';
+            for (let i = 0; i < 100; i++) {
+                const x = (i * 191) % CONFIG.MAP_WIDTH;
+                const y = (i * 317) % CONFIG.MAP_HEIGHT;
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.strokeStyle = '#1a3d14';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(0, 0, CONFIG.MAP_WIDTH, CONFIG.MAP_HEIGHT);
+        }
+
+        // ============================================
+        // ОТРИСОВКА ДОРОГИ
+        // ============================================
+        function drawRoad() {
+            ctx.fillStyle = '#6b5d4f';
+            
+            ctx.fillRect(240, 200, 1900, 140);
+            ctx.fillRect(2000, 200, 140, 1200);
+            ctx.fillRect(500, 1260, 1640, 140);
+            ctx.fillRect(240, 200, 140, 1200);
+            
+            ctx.strokeStyle = '#f4d35e';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([30, 20]);
+            
+            ctx.beginPath();
+            ctx.moveTo(240, 270);
+            ctx.lineTo(2070, 270);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(2070, 270);
+            ctx.lineTo(2070, 1330);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(310, 1330);
+            ctx.lineTo(2070, 1330);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(310, 270);
+            ctx.lineTo(310, 1330);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+        }
+
+        // ============================================
+        // ОТРИСОВКА ЗОНЫ
+        // ============================================
+        function drawZone(zone) {
+            const truckInZone = 
+                truck.x > zone.x && 
+                truck.x < zone.x + zone.width &&
+                truck.y > zone.y && 
+                truck.y < zone.y + zone.height;
+            
+            ctx.fillStyle = zone.color + '55';
+            ctx.fillRect(zone.x, zone.y, zone.width, zone.height);
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(zone.x, zone.y, zone.width, zone.height);
+            ctx.clip();
+            ctx.strokeStyle = zone.color + '40';
+            ctx.lineWidth = 2;
+            for (let i = -zone.height; i < zone.width; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(zone.x + i, zone.y);
+                ctx.lineTo(zone.x + i + zone.height, zone.y + zone.height);
+                ctx.stroke();
+            }
+            ctx.restore();
+            
+            ctx.strokeStyle = zone.color;
+            ctx.lineWidth = truckInZone ? 6 : 4;
+            ctx.setLineDash([15, 10]);
+            ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
+            ctx.setLineDash([]);
+            
+            if (truckInZone) {
+                const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 200);
+                ctx.strokeStyle = zone.color;
+                ctx.globalAlpha = pulse * 0.5;
+                ctx.lineWidth = 8;
+                ctx.strokeRect(zone.x - 4, zone.y - 4, zone.width + 8, zone.height + 8);
+                ctx.globalAlpha = 1;
+            }
+            
+            const cx = zone.x + zone.width / 2;
+            const cy = zone.y + 40;
+            
+            if (zone === loadingZone) {
+                ctx.fillStyle = '#ff9500';
+                ctx.beginPath();
+                ctx.moveTo(cx - 25, cy - 10);
+                ctx.lineTo(cx + 25, cy - 10);
+                ctx.lineTo(cx + 20, cy + 15);
+                ctx.lineTo(cx - 20, cy + 15);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = '#00b4d8';
+                ctx.fillRect(cx - 20, cy - 15, 40, 30);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🏗', cx, cy);
+            }
+            
+            const labelY = zone.y + zone.height - 30;
+            ctx.font = 'bold 22px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const textWidth = ctx.measureText(zone.label).width;
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            const padX = 15, padY = 8;
+            ctx.fillRect(cx - textWidth / 2 - padX, labelY - 14 - padY, textWidth + padX * 2, 28 + padY * 2);
+            
+            ctx.strokeStyle = zone.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx - textWidth / 2 - padX, labelY - 14 - padY, textWidth + padX * 2, 28 + padY * 2);
+            
+            ctx.fillStyle = '#fff';
+            ctx.fillText(zone.label, cx, labelY);
+        }
+
+        // ============================================
+        // ОТРИСОВКА ПРЕПЯТСТВИЙ
+        // ============================================
+        function drawObstacles() {
+            for (let obs of obstacles) {
+                if (obs.type === 'rock') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 4, obs.y + 4, obs.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#6b6b6b';
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#8a8a8a';
+                    ctx.beginPath();
+                    ctx.arc(obs.x - obs.radius * 0.3, obs.y - obs.radius * 0.3, obs.radius * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = '#3a3a3a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                } else if (obs.type === 'cone') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 2, obs.y + 2, obs.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#222';
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y, obs.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#ff6b35';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y - obs.radius);
+                    ctx.lineTo(obs.x - obs.radius * 0.7, obs.y + obs.radius * 0.8);
+                    ctx.lineTo(obs.x + obs.radius * 0.7, obs.y + obs.radius * 0.8);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x - obs.radius * 0.35, obs.y - obs.radius * 0.1);
+                    ctx.lineTo(obs.x + obs.radius * 0.35, obs.y - obs.radius * 0.1);
+                    ctx.lineTo(obs.x + obs.radius * 0.45, obs.y + obs.radius * 0.15);
+                    ctx.lineTo(obs.x - obs.radius * 0.45, obs.y + obs.radius * 0.15);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obs.type === 'barrier') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.fillRect(obs.x + 3, obs.y + 3, obs.width, obs.height);
+                    
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    
+                    ctx.fillStyle = '#ff6b35';
+                    const stripeSize = 15;
+                    if (obs.width > obs.height) {
+                        for (let i = 0; i < obs.width; i += stripeSize * 2) {
+                            ctx.fillRect(obs.x + i, obs.y, stripeSize, obs.height);
+                        }
+                    } else {
+                        for (let i = 0; i < obs.height; i += stripeSize * 2) {
+                            ctx.fillRect(obs.x, obs.y + i, obs.width, stripeSize);
+                        }
+                    }
+                    
+                    ctx.strokeStyle = '#222';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                }
+            }
+        }
+
+        // ============================================
+        // ОТРИСОВКА САМОСВАЛА
+        // ============================================
+        function drawTruck() {
+            ctx.save();
+            ctx.translate(truck.x, truck.y);
+            ctx.rotate(truck.angle);
+            
+            const w = CONFIG.TRUCK_WIDTH;
+            const h = CONFIG.TRUCK_HEIGHT;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(-w/2 + 4, -h/2 + 4, w, h);
+            
+            ctx.fillStyle = '#d4a017';
+            ctx.fillRect(-w/2, -h/2, w * 0.7, h);
+            ctx.strokeStyle = '#8b6914';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-w/2, -h/2, w * 0.7, h);
+            
+            const cargoLevel = truck.cargo / CONFIG.TRUCK_CAPACITY;
+            if (cargoLevel > 0) {
+                const cargoW = (w * 0.7 - 6) * cargoLevel;
+                ctx.fillStyle = '#6b4423';
+                ctx.fillRect(-w/2 + 3, -h/2 + 3, cargoW, h - 6);
+                
+                ctx.fillStyle = '#8b5a2b';
+                for (let i = 0; i < cargoW; i += 8) {
+                    for (let j = 0; j < h - 6; j += 8) {
+                        if ((i + j) % 16 === 0) {
+                            ctx.fillRect(-w/2 + 3 + i, -h/2 + 3 + j, 4, 4);
+                        }
+                    }
+                }
+            }
+            
+            ctx.fillStyle = '#c0392b';
+            ctx.fillRect(w/2 - w * 0.3, -h/2, w * 0.3, h);
+            ctx.strokeStyle = '#7d1f14';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(w/2 - w * 0.3, -h/2, w * 0.3, h);
+            
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(w/2 - w * 0.27, -h/2 + 4, w * 0.24, h - 8);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(w/2 - w * 0.27, -h/2 + 4, w * 0.08, h - 8);
+            
+            ctx.fillStyle = '#fffacd';
+            ctx.fillRect(w/2 - 3, -h/2 + 3, 3, 6);
+            ctx.fillRect(w/2 - 3, h/2 - 9, 3, 6);
+            
+            ctx.fillStyle = '#1a1a1a';
+            const wheelW = 14;
+            const wheelH = 8;
+            
+            ctx.fillRect(-w/2 + 4, -h/2 - 2, wheelW, wheelH);
+            ctx.fillRect(-w/2 + 4, h/2 - wheelH + 2, wheelW, wheelH);
+            
+            ctx.fillRect(w/2 - w * 0.3 - wheelW - 2, -h/2 - 2, wheelW, wheelH);
+            ctx.fillRect(w/2 - w * 0.3 - wheelW - 2, h/2 - wheelH + 2, wheelW, wheelH);
+            
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            const wheels = [
+                { x: -w/2 + 4 + wheelW/2, y: -h/2 + 2 },
+                { x: -w/2 + 4 + wheelW/2, y: h/2 - 2 },
+                { x: w/2 - w * 0.3 - wheelW/2 - 2, y: -h/2 + 2 },
+                { x: w/2 - w * 0.3 - wheelW/2 - 2, y: h/2 - 2 }
+            ];
+            for (let wh of wheels) {
+                const offset = (truck.wheelRotation * 4) % 6;
+                ctx.beginPath();
+                ctx.moveTo(wh.x - wheelW/2 + offset, wh.y - wheelH/2);
+                ctx.lineTo(wh.x - wheelW/2 + offset, wh.y + wheelH/2);
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            
+            if (truck.isLoading) {
+                drawFloatingLabel(truck.x, truck.y - 50, '⛏ ИДЁТ ПОГРУЗКА', '#ff9500');
+                drawProgressBar(truck.x - 40, truck.y - 70, 80, 10, truck.cargo / CONFIG.TRUCK_CAPACITY, '#ff9500');
+            }
+            
+            if (truck.isUnloading) {
+                drawFloatingLabel(truck.x, truck.y - 50, '🔻 РАЗГРУЗКА', '#00b4d8');
+                drawProgressBar(truck.x - 40, truck.y - 70, 80, 10, truck.cargo / CONFIG.TRUCK_CAPACITY, '#00b4d8');
+            }
+        }
+
+        function drawFloatingLabel(x, y, text, color) {
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const w = ctx.measureText(text).width + 20;
+            
+            ctx.fillStyle = 'rgba(0,0,0,0.85)';
+            ctx.fillRect(x - w/2, y - 12, w, 24);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - w/2, y - 12, w, 24);
+            
+            ctx.fillStyle = color;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawProgressBar(x, y, w, h, value, color) {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, w * Math.max(0, Math.min(1, value)), h);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, w, h);
+        }
+
+        function drawCollisionMessage() {
+            const alpha = Math.min(1, collisionMessage.timer);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const text = collisionMessage.text;
+            const w = ctx.measureText(text).width + 40;
+            const x = canvas.width / 2;
+            const y = 80;
+            
+            ctx.fillStyle = 'rgba(200, 0, 0, 0.85)';
+            ctx.fillRect(x - w/2, y - 20, w, 40);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - w/2, y - 20, w, 40);
+            
+            ctx.fillStyle = '#fff';
+            ctx.fillText(text, x, y);
+            ctx.restore();
+        }
+
+        // ============================================
+        // ОБНОВЛЕНИЕ HUD
+        // ============================================
+        function updateHUD() {
+            // Обновление информации об уровне
+            levelTitle.textContent = `УРОВЕНЬ ${missionStats.currentLevel}`;
+            orderDisplay.textContent = `${Math.floor(missionStats.currentLevelDelivered)} / ${missionStats.currentLevelTarget}`;
+            
+            // Время
+            const minutes = Math.floor(missionStats.timeRemaining / 60);
+            const seconds = Math.floor(missionStats.timeRemaining % 60);
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (missionStats.timeRemaining < 30) {
+                timeDisplay.style.color = '#ff6b6b';
+            } else {
+                timeDisplay.style.color = '#ffd700';
+            }
+            
+            cargoDisplay.textContent = `${Math.floor(truck.cargo)} / ${CONFIG.TRUCK_CAPACITY}`;
+            deliveredDisplay.textContent = Math.floor(missionStats.totalDelivered);
+            
+            const speedKmh = Math.abs(truck.speed) * 10;
+            speedDisplay.textContent = `${Math.round(speedKmh)} км/ч`;
+            
+            healthDisplay.textContent = `${Math.round(truck.health)}%`;
+            healthBar.style.width = `${truck.health}%`;
+            
+            if (truck.health > 60) {
+                healthBar.style.background = 'linear-gradient(90deg, #4ecdc4, #44a08d)';
+            } else if (truck.health > 30) {
+                healthBar.style.background = 'linear-gradient(90deg, #f4d35e, #ff9500)';
+            } else {
+                healthBar.style.background = 'linear-gradient(90deg, #ff6b6b, #ee5253)';
+            }
+            
+            updateTaskHint();
+        }
+
+        // ============================================
+        // ОБНОВЛЕНИЕ ПОДСКАЗКИ ЗАДАЧИ
+        // ============================================
+        function updateTaskHint() {
+            let hint = '';
+            const currentDelivered = Math.floor(missionStats.currentLevelDelivered);
+            const currentTarget = missionStats.currentLevelTarget;
+            
+            if (truck.cargo <= 0.1) {
+                hint = '🔄 Кузов пуст. Вернитесь в зону погрузки!';
+            } else if (truck.cargo >= CONFIG.TRUCK_CAPACITY * 0.95) {
+                hint = '🚛 Кузов загружен! Везите груз на стройку!';
+            } else if (truck.isLoading) {
+                hint = '⛏ Идёт погрузка... Остановитесь и дождитесь';
+            } else {
+                const inLoading = 
+                    truck.x > loadingZone.x && truck.x < loadingZone.x + loadingZone.width &&
+                    truck.y > loadingZone.y && truck.y < loadingZone.y + loadingZone.height;
+                const inUnloading = 
+                    truck.x > unloadingZone.x && truck.x < unloadingZone.x + unloadingZone.width &&
+                    truck.y > unloadingZone.y && truck.y < unloadingZone.y + unloadingZone.height;
+                
+                if (inUnloading) {
+                    hint = `🔻 Удерживайте E для разгрузки (заказ: ${currentDelivered}/${currentTarget})`;
+                } else if (inLoading) {
+                    hint = '⛏ Остановитесь для погрузки';
+                } else {
+                    hint = '🎯 Заедьте в зону погрузки (слева вверху)';
+                }
+            }
+            
+            taskHint.textContent = hint;
+        }
+
+        // ============================================
+        // ЭКРАНЫ ПОБЕДЫ / ПОРАЖЕНИЯ
+        // ============================================
+        function showWinScreen() {
+            const minutes = Math.floor(missionStats.timeRemaining / 60);
+            const seconds = Math.floor(missionStats.timeRemaining % 60);
+            
+            document.getElementById('winDelivered').textContent = Math.floor(missionStats.totalDelivered);
+            document.getElementById('winLevel').textContent = missionStats.currentLevel;
+            document.getElementById('winTimeLeft').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('winHealth').textContent = `${Math.round(truck.health)}%`;
+            
+            hud.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            taskHint.classList.add('hidden');
+            winScreen.classList.remove('hidden');
+            gameState = GAME_STATES.WIN;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function showLoseScreen() {
+            document.getElementById('loseReason').textContent = missionStats.loseReason;
+            document.getElementById('loseDelivered').textContent = Math.floor(missionStats.totalDelivered);
+            document.getElementById('loseLevel').textContent = missionStats.currentLevel;
+            
+            hud.classList.add('hidden');
+            pauseButton.classList.add('hidden');
+            taskHint.classList.add('hidden');
+            loseScreen.classList.remove('hidden');
+            gameState = GAME_STATES.LOSE;
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
+        resizeCanvas();
+        setGameState(GAME_STATES.MENU);
+    </script>
+</body>
+</html>
